@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Management Visit</title>
+
+<style>
+
+.summary-box{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    align-items:center;
+    font-weight:bold;
+    color:#1565c0;
+}
+
+.button-group{
+    display:flex;
+    gap:10px;
+}    
+
+ .download-btn{
+    position:absolute;
+    top:10px;
+    right:60px;
+    z-index:1000;
+    background:#1565c0;
+    color:white;
+    border:none;
+    padding:8px 14px;
+    border-radius:5px;
+    cursor:pointer;
+    font-weight:bold;
+}   
+
+.modal{
+    display:none;
+    position:fixed;
+    z-index:999;
+    left:0;
+    top:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.7);
+}
+
+.modal-content{
+    position:relative;
+    width:90%;
+    height:90%;
+    margin:2% auto;
+    background:white;
+    border-radius:10px;
+    overflow:hidden;
+}
+
+.close{
+    position:absolute;
+    right:15px;
+    top:10px;
+    font-size:30px;
+    cursor:pointer;
+    z-index:1000;
+    color:red;
+    font-weight:bold;
+}
+
+#pdfFrame{
+    width:100%;
+    height:100%;
+    border:none;
+}    
+
+.table-container{
+    padding:15px;
+    overflow-x:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    background:#1565c0;
+    color:white;
+    padding:12px;
+    text-align:left;
+}
+
+td{
+    padding:8px 10px;
+}
+
+tbody tr{
+    transition:0.2s;
+}
+
+/* baris ganjil */
+tbody tr:nth-child(odd){
+    background:white;
+}
+
+/* baris genap */
+tbody tr:nth-child(even){
+    background:#eaf3ff;
+}
+
+/* hover */
+tbody tr:hover{
+    background:#d6e9ff;
+}
+
+th{
+    background:#1565c0;
+    color:white;
+    padding:10px;
+    text-align:left;
+    white-space:nowrap;
+}
+
+.lampiran-cell{
+    white-space:nowrap;
+}
+
+.pdf-icon{
+    cursor:pointer;
+    font-size:22px;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f0f2f5;
+}
+
+.header{
+    background:#1565c0;
+    color:white;
+    padding:15px;
+    font-size:24px;
+    font-weight:bold;
+    text-align:center;
+}
+
+.toolbar{
+    background:white;
+    padding:10px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 2px 5px rgba(0,0,0,0.15);
+}
+
+button{
+    background:#1976d2;
+    color:white;
+    border:none;
+    padding:10px 15px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+button:hover{
+    background:#0d47a1;
+}
+
+.container{
+    padding:15px;
+}
+
+iframe{
+    width:100%;
+    height:500px;
+    border:none;
+    margin-top:10px;
+    border-radius:8px;
+}
+
+.loading{
+    text-align:center;
+    padding:20px;
+    font-size:18px;
+}
+
+.center{
+    text-align:center;
+}
+
+.dashboard-content{
+    position:relative;
+    width:96vw;
+    height:96vh;
+    margin:1vh auto;
+    background:white;
+    border-radius:10px;
+    padding:15px;
+    overflow:hidden;
+}
+
+.dashboard-grid{
+    display:grid;
+    grid-template-columns:65% 35%;
+    gap:10px;
+    width:100%;
+    height:calc(100% - 20px);
+}
+
+.chart-box{
+    position:relative;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+}
+
+.pie-container{
+    display:grid;
+    grid-template-rows:42% auto 42%;
+    gap:5px;
+    height:100%;
+    align-items:center;
+}
+
+.legend-box{
+    text-align:center;
+    font-size:13px;
+    font-weight:bold;
+    color:#444;
+}
+
+canvas{
+    width:100% !important;
+    height:100% !important;
+}
+
+.download-dashboard-btn{
+    position:absolute;
+    top:10px;
+    right:70px;
+    z-index:1000;
+    background:#2e7d32;
+    color:white;
+    border:none;
+    padding:10px 16px;
+    border-radius:6px;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+</head>
+
+<body>
+
+<div class="header">
+    MANAGEMENT VISIT
+</div>
+
+<div class="toolbar">
+    <div class="summary-box">
+        <div>
+            Jumlah Periode Tilik :
+            <span id="totalPeriode">0</span>
+        </div>
+        <div>
+            Jumlah Temuan :
+            <span id="totalTemuan">0</span>
+        </div>
+        <div>
+            Jumlah Perbaikan :
+            <span id="totalPerbaikan">0</span>
+        </div>
+        <div>
+            Progres Perbaikan :
+            <span id="totalProgress">0%</span>
+        </div>
+    </div>
+
+    <div class="button-group">
+        <button onclick="openForm(
+        'https://forms.gle/nXBesBgprcaK9qdJ8'
+        )">
+            FORM TILIK
+        </button>
+        <button onclick="openForm(
+        'https://forms.gle/d84NcKqXi6HD5JZ67'
+        )">
+            FORM TINDAKAN
+        </button>
+        <button onclick="openForm(
+        'https://forms.gle/nkuT1DiWDMi2szmC6'
+        )">
+            FORM VERIFIKASI
+        </button>
+        <button onclick="openDashboard()">
+            DASHBOARD
+        </button>
+    </div>
+</div>
+
+<div class="container">
+    <div id="loading" class="loading">
+        Loading data...
+    </div>
+<div class="table-container">
+
+<table>
+
+<thead>
+<tr>
+    <th class="center">
+        Tanggal Tilik
+    </th>
+    <th>
+        Nama Unit
+    </th>
+    <th>
+        Kepala Unit
+    </th>
+    <th class="center">
+        Jumlah Temuan
+    </th>
+    <th class="center">
+        Tanggal Verifikasi
+    </th>
+    <th>
+        Nama Verifikator
+    </th>
+    <th class="center">
+        Jumlah Perbaikan
+    </th>
+    <th class="center">
+        Progres
+    </th>
+    <th>
+        Lampiran
+    </th>
+</tr>
+</thead>
+
+<tbody id="listData"></tbody>
+
+</table>
+
+</div>
+</div>
+
+<script>
+
+const API_URL =
+"https://script.google.com/macros/s/AKfycbyv1LEsDvqucQpW3aUXbxVMfknY30P4JUTWfE_izqz3wq6rNLASFv5tntqApmCpzSMg/exec";
+let allData = [];
+
+function openForm(url){
+    window.open(url, "_blank");
+}
+
+async function loadData(){
+    try{
+        const response = await fetch(API_URL);
+        allData = await response.json();
+        document.getElementById("loading").style.display = "none";
+        hitungSummary();
+        tampilData(); 
+    }catch(err){
+        document.getElementById("loading").innerHTML =
+            "Gagal load data";
+        console.log(err);
+    }
+}
+
+function openDashboard(){
+    document.getElementById("dashboardModal")
+        .style.display = "block";
+    buatGrafik();
+}
+
+function closeDashboard(){
+    document.getElementById("dashboardModal")
+        .style.display = "none";
+}
+
+let barChartObj = null;
+let pieTemuanObj = null;
+let piePerbaikanObj = null;
+
+function buatGrafik(){
+    // destroy chart lama
+    if(barChartObj) barChartObj.destroy();
+    if(pieTemuanObj) pieTemuanObj.destroy();
+    if(piePerbaikanObj) piePerbaikanObj.destroy();
+    const units = {};
+    allData.forEach(item => {
+        if(!units[item.unit]){
+            units[item.unit] = {
+                temuan:0,
+                perbaikan:0
+            };
+        }
+        const jumlah =
+            parseFloat(item.jumlah) || 0;
+        if(item.progres == "T"){
+            units[item.unit].temuan += jumlah;
+        }
+        if(item.progres == "P"){
+            units[item.unit].perbaikan += jumlah;
+        }
+    });
+    // sorting
+    const sorted =
+        Object.entries(units)
+        .sort((a,b)=>
+            b[1].temuan - a[1].temuan
+        );
+    const labels =
+        sorted.map(x=>x[0]);
+    const temuan =
+        sorted.map(x=>x[1].temuan);
+    const perbaikan =
+        sorted.map(x=>x[1].perbaikan);
+    // warna kontras
+    const colors = [
+        "#e53935",
+        "#8e24aa",
+        "#3949ab",
+        "#1e88e5",
+        "#00897b",
+        "#43a047",
+        "#fdd835",
+        "#fb8c00",
+        "#6d4c41",
+        "#546e7a",
+        "#d81b60",
+        "#5e35b1"
+    ];
+
+    // =========================
+    // BAR CHART
+    // =========================
+
+    barChartObj = new Chart(
+        document.getElementById("barChart"),
+        {
+            type:"bar",
+            data:{
+                labels:labels,
+                datasets:[
+                    {
+                        label:"Temuan",
+                        data:temuan
+                    },
+                    {
+                        label:"Perbaikan",
+                        data:perbaikan
+                    }
+                ]
+            },
+            options:{
+                layout:{
+                    padding:{
+                    top:10,
+                    bottom:10,
+                    left:10,
+                    right:10
+                    }
+                },
+                responsive:true,
+                maintainAspectRatio:false,
+                plugins:{
+                    title:{
+                       display:true,
+                        text:"GRAFIK TEMUAN & PERBAIKAN",
+                        font:{
+                            size:22,
+                            weight:"bold"
+                         },
+                        padding:{
+                            top:10,
+                            bottom:20
+                        },
+                        color:"#1565c0"
+                    }                
+                }
+            }
+        }
+    );
+
+    // =========================
+    // PIE TEMUAN
+    // =========================
+
+    pieTemuanObj = new Chart(
+        document.getElementById("pieTemuan"),
+        {
+            type:"pie",
+            data:{
+                labels:labels,
+                datasets:[{
+                    data:temuan,
+                    backgroundColor:colors
+                }]
+            },
+            options:{
+                responsive:true,
+                maintainAspectRatio:false,
+                layout:{
+                  padding:10
+                },
+                plugins:{
+                    legend:{
+                        display:false
+                    },
+                    title:{
+                        display:true,
+                        text:"TEMUAN TILIK",
+                        font:{
+                            size:18,
+                            weight:"bold"
+                        },
+                        padding:{
+                            top:10,
+                            bottom:10
+                        },
+                        color:"#1565c0"
+                    }
+                }
+            }
+        }
+    );
+
+    // =========================
+    // PIE PERBAIKAN
+    // =========================
+
+    piePerbaikanObj = new Chart(
+        document.getElementById("piePerbaikan"),
+        {
+            type:"pie",
+            data:{
+                labels:labels,
+                datasets:[{
+                    data:perbaikan,
+                    backgroundColor:colors
+                }]
+            },
+            options:{
+                responsive:true,
+                maintainAspectRatio:false,
+                layout:{
+                  padding:10
+                },
+                plugins:{
+                    legend:{
+                        display:false
+                    },
+                    title:{
+                        display:true,
+                        text:"PROGRES PERBAIKAN",
+                        position:"bottom",
+                        font:{
+                            size:18,
+                            weight:"bold"
+                        },
+                        padding:{
+                            top:10,
+                            bottom:10
+                        },
+                        color:"#1565c0"
+                    }
+                }
+            }
+        }
+    );
+
+    // =========================
+    // LEGENDA TENGAH
+    // =========================
+
+    let legendHTML = "";
+    labels.forEach((lbl,i)=>{
+        legendHTML += `
+            <div style="
+                display:inline-block;
+                margin:4px 10px;
+            ">
+                <span style="
+                    display:inline-block;
+                    width:14px;
+                    height:14px;
+                    background:${colors[i % colors.length]};
+                    margin-right:5px;
+                    border-radius:3px;
+                "></span>
+                ${lbl}
+            </div>
+        `;
+    });
+    document.getElementById("legendContainer")
+        .innerHTML = legendHTML;
+}
+
+async function downloadDashboardPDF(){
+    const { jsPDF } = window.jspdf;
+    const dashboard =
+        document.querySelector(".dashboard-content");
+    // capture dashboard
+    dashboard.style.height = "auto";
+    const canvas =
+        await html2canvas(dashboard, {
+            scale:2,
+            useCORS:true,
+            backgroundColor:"#ffffff",
+            windowWidth: dashboard.scrollWidth,
+            windowHeight: dashboard.scrollHeight
+        });
+    const imgData =
+        canvas.toDataURL("image/png");
+    // ukuran canvas
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    // buat PDF landscape
+    const pdf =
+        new jsPDF({
+            orientation:"landscape",
+            unit:"mm",
+            format:"a4"
+        });
+    // ukuran halaman pdf
+    const pageWidth =
+        pdf.internal.pageSize.getWidth();
+    const pageHeight =
+        pdf.internal.pageSize.getHeight();
+    // margin
+    const margin = 5;
+    // area tersedia
+    const availableWidth =
+        pageWidth - (margin * 2);
+    const availableHeight =
+        pageHeight - (margin * 2);
+    // hitung rasio
+    const ratio =
+        Math.min(
+            availableWidth / imgWidth,
+            availableHeight / imgHeight
+        );
+    // ukuran final
+    const finalWidth =
+        imgWidth * ratio;
+    const finalHeight =
+        imgHeight * ratio;
+    // posisi center
+    const x =
+        (pageWidth - finalWidth) / 2;
+    const y =
+        (pageHeight - finalHeight) / 2;
+    // masukkan gambar
+    pdf.addImage(
+        imgData,
+        "PNG",
+        x,
+        y,
+        finalWidth,
+        finalHeight
+    );
+    // download
+    pdf.save("Dashboard_Tilik.pdf");
+    dashboard.style.height = "96vh";
+}
+
+
+function formatTanggal(tgl){
+    if(!tgl) return "";
+    tgl = tgl.toString();
+    // pastikan 8 digit
+    if(tgl.length != 8) return tgl;
+    const tahun = tgl.substring(0,4);
+    const bulan = tgl.substring(4,6);
+    const hari = tgl.substring(6,8);
+    return hari + "-" + bulan + "-" + tahun;
+}
+
+function hitungSummary(){
+    // jumlah periode unik berdasarkan tanggal
+    const uniqueTanggal =
+        [...new Set(allData.map(x => x.tanggal))];
+    const totalPeriode =
+        uniqueTanggal.length;
+    // total temuan
+    const totalTemuan =
+        allData
+        .filter(x => x.progres == "T")
+        .reduce((a,b) =>
+            a + (parseFloat(b.jumlah) || 0), 0);
+    // total perbaikan
+    const totalPerbaikan =
+        allData
+        .filter(x => x.progres == "P")
+        .reduce((a,b) =>
+            a + (parseFloat(b.jumlah) || 0), 0);
+    // progress %
+    let progress = 0;
+    if(totalTemuan > 0){
+        progress =
+            (
+                totalPerbaikan /
+                totalTemuan
+            ) * 100;
+    }
+    document.getElementById("totalPeriode")
+        .innerText = totalPeriode;
+    document.getElementById("totalTemuan")
+        .innerText = totalTemuan;
+    document.getElementById("totalPerbaikan")
+        .innerText = totalPerbaikan;
+    document.getElementById("totalProgress")
+        .innerText =
+            progress.toFixed(0) + "%";
+}
+
+function showPDF(fileId){
+    // LINK PREVIEW
+    const previewLink =
+        "https://drive.google.com/file/d/" +
+        fileId +
+        "/preview";
+    // LINK DOWNLOAD
+    const downloadLink =
+        "https://drive.google.com/uc?export=download&id=" +
+        fileId;
+    // tampilkan modal
+    document.getElementById("pdfModal")
+        .style.display = "block";
+    // tampilkan preview
+    document.getElementById("pdfFrame")
+        .src = previewLink;
+    // tombol download
+    document.getElementById("downloadBtn")
+        .onclick = function(){
+            window.open(downloadLink, "_blank");
+        };
+}
+
+function closePDF(){
+    document.getElementById("pdfModal")
+        .style.display = "none";
+    document.getElementById("pdfFrame")
+        .src = "";
+}
+
+function tampilData(){
+    const list =
+        document.getElementById("listData");
+    list.innerHTML = "";
+    // ambil data progres T
+    const dataT =
+        allData.filter(x => x.progres == "T");
+    if(dataT.length == 0){
+        list.innerHTML =
+            "<tr><td colspan='8'>Tidak ada data</td></tr>";
+        return;
+    }
+
+    dataT.forEach(t => {
+
+        // cari pasangan P
+        const p =
+            allData.find(x =>
+                x.progres == "P" &&
+                x.tanggal == t.tanggal &&
+                x.unit == t.unit
+            );
+        let jumlahT =
+            parseFloat(t.jumlah) || 0;
+        let jumlahP = 0;
+        let progres = "0%";
+        if(p){
+            jumlahP =
+                parseFloat(p.jumlah) || 0;
+            if(jumlahT > 0){
+                progres =
+                    (
+                        (jumlahP / jumlahT) * 100
+                    ).toFixed(0) + "%";
+            }
+        }
+
+        // PDF TEMUAN
+        let pdfT = t.link;
+        if(!pdfT || pdfT == ""){
+            pdfT =
+                "https://drive.google.com/file/d/" +
+                t.fileId +
+                "/preview";
+        }
+
+        // PDF PERBAIKAN
+        let pdfP = "";
+
+        if(p){
+            pdfP = p.link;
+            if(!pdfP || pdfP == ""){
+                pdfP =
+                    "https://drive.google.com/file/d/" +
+                    p.fileId +
+                    "/preview";
+            }
+
+        }
+
+        const tr =
+            document.createElement("tr");
+
+        tr.innerHTML = `
+        <tr>
+            <td align="center">
+                ${formatTanggal(t.tanggal)}
+            </td>
+            <td> 
+              ${t.unit}
+            </td>
+            <td> 
+              ${t.pimpinan}
+            </td>
+            <td align="center">
+               ${jumlahT}
+            </td>
+            <td align="center">
+               ${p ? formatTanggal(p.tanggalv) : "-"}
+            </td>
+            <td>
+               ${p ? p.namav : "-"}
+            </td>
+            <td align="center">
+              ${jumlahP}
+            </td>
+            <td align="center">
+              ${progres}
+            </td>
+            <td class="lampiran-cell">
+
+            <!-- PDF TEMUAN -->
+            <span class="pdf-icon"
+              title="Temuan"
+              onclick="showPDF('${t.fileId}')">
+              🔍
+            </span>
+
+            <!-- PDF PERBAIKAN -->
+            ${p ? `
+            <span class="pdf-icon"
+                  title="Perbaikan"
+                  onclick="showPDF('${p.fileId}')">
+                  ✅
+            </span>
+          ` : `
+            <span class="pdf-placeholder"></span>
+          `}
+           </td>
+        </tr>
+        `;
+        list.appendChild(tr);
+    });
+
+}
+
+
+loadData();
+
+</script>
+
+<div id="pdfModal" class="modal">
+    <div class="modal-content">
+        <span class="close"
+              onclick="closePDF()">
+              &times;
+        </span>
+        <button id="downloadBtn"
+                class="download-btn">
+            Download PDF
+        </button>
+        <iframe id="pdfFrame"></iframe>
+    </div>
+</div>
+
+<div id="dashboardModal" class="modal">
+    <div class="dashboard-content">
+        <span class="close"
+              onclick="closeDashboard()">
+              &times;
+        </span>
+        <button class="download-dashboard-btn"
+                onclick="downloadDashboardPDF()">
+                DOWNLOAD PDF
+        </button>
+        <div class="dashboard-grid">
+            <!-- kiri -->
+            <div class="chart-box">
+                <canvas id="barChart"></canvas>
+            </div>
+            <!-- kanan -->
+            <div class="pie-container">
+                <!-- pie atas -->
+                <div class="chart-box">
+                    <canvas id="pieTemuan"></canvas>
+                </div>
+                <!-- legenda -->
+                <div class="legend-box"
+                     id="legendContainer">
+                </div>
+                <!-- pie bawah -->
+                <div class="chart-box">
+                    <canvas id="piePerbaikan"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
